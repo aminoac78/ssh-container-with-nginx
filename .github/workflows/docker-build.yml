@@ -24,4 +24,4 @@ jobs:
       with:
         context: .
         push: true
-        tags: aminoac78/ssh-ubuntu:latest
+        tags: aminoac78/ssh-alpine:latest
