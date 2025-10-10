@@ -1,16 +1,11 @@
-FROM ubuntu:22.04
+# 文件名：Dockerfile
+FROM alpine:latest
 
-ENV DEBIAN_FRONTEND=noninteractive
-
-RUN apt update && \
-    apt install -y openssh-server sudo net-tools && \
-    mkdir /var/run/sshd && \
-    echo 'root:toor' | chpasswd && \
+# 安装 openssh
+RUN apk add --no-cache openssh && \
+    echo "root:123456" | chpasswd && \
     sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config && \
-    sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config && \
-    echo 'export VISIBLE=now' >> /etc/profile
-
-RUN mkdir -p /root/.ssh
+    mkdir -p /var/run/sshd
 
 EXPOSE 22
 
