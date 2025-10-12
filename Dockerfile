@@ -13,7 +13,7 @@ RUN apk add --no-cache openssh nginx bash curl touch&& \
     #touch /etc/nginx/nginx.conf
 
 # 复制 Nginx 配置
-COPY nginx.conf /etc/nginx/nginx.conf
+#COPY nginx.conf /etc/nginx/nginx.conf
 
 # 复制 Cloudflared 配置
 #COPY config.yml /etc/cloudflared/config.yml
