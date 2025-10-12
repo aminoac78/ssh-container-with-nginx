@@ -23,6 +23,6 @@ RUN apk add --no-cache openssh nginx bash curl && \
 #RUN chmod +x /start.sh
 
 # 暴露端口（容器内）
-EXPOSE 22 80
+EXPOSE  80
 
 #CMD ["/start.sh"]
