@@ -25,4 +25,4 @@ RUN apk add --no-cache openssh nginx bash curl && \
 # 暴露端口（容器内）
 EXPOSE 22 80
 
-CMD ["/start.sh"]
+#CMD ["/start.sh"]
