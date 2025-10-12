@@ -1,7 +1,7 @@
 FROM alpine:latest
 
 # 安装依赖：SSH、Nginx、Cloudflared、bash
-RUN apk add --no-cache openssh nginx bash curl touch&& \
+RUN apk add --no-cache openssh nginx bash curl && \
     # 设置 root 密码
     echo "root:123456" | chpasswd && \
     sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config && \
