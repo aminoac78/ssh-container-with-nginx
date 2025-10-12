@@ -14,7 +14,7 @@ RUN apk add --no-cache openssh nginx bash curl && \
 
 # 复制 Nginx 配置
 #COPY nginx.conf /etc/nginx/nginx.conf
-RUN   nginx &
+
 # 复制 Cloudflared 配置
 #COPY config.yml /etc/cloudflared/config.yml
 
@@ -25,4 +25,5 @@ RUN   nginx &
 # 暴露端口（容器内）
 EXPOSE  80
 
+CMD sh -c "/usr/sbin/sshd && nginx -g 'daemon off;'"
 #CMD ["/start.sh"]
