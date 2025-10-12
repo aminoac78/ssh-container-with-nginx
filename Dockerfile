@@ -19,8 +19,8 @@ RUN apk add --no-cache openssh nginx bash curl touch&& \
 #COPY config.yml /etc/cloudflared/config.yml
 
 # 启动脚本
-COPY start.sh /start.sh
-RUN chmod +x /start.sh
+#COPY start.sh /start.sh
+#RUN chmod +x /start.sh
 
 # 暴露端口（容器内）
 EXPOSE 22 80
