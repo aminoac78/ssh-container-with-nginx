@@ -10,6 +10,7 @@ RUN apk add --no-cache openssh nginx bash cloudflared curl && \
     # 生成 SSH host keys
     ssh-keygen -A && \
     rm -rf /var/cache/apk/*
+    touch /etc/nginx/nginx.conf
 
 # 复制 Nginx 配置
 COPY nginx.conf /etc/nginx/nginx.conf
