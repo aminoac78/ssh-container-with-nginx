@@ -30,11 +30,13 @@ RUN echo "devuser ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 #RUN chmod +x /start.sh
 
 # 暴露端口（容器内）
-EXPOSE  80
+EXPOSE  22 80
 
-CMD sh -c "/usr/sbin/sshd && nginx -g 'daemon off;'"
+
 #CMD ["/start.sh"]
+RUN chown -R 10014:10014 /home/devuser
 # 切换到该用户（⚠️ 必须用 UID）
 USER 10014
 
-WORKDIR /home/devuser
+CMD sh -c "/usr/sbin/sshd && nginx -g 'daemon off;'"
+
