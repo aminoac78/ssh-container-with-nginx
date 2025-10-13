@@ -13,6 +13,8 @@ RUN apk add --no-cache openssh nginx bash curl && \
     #touch /etc/nginx/nginx.conf
 # 创建非 root 用户
 RUN addgroup -S devgroup && adduser -S devuser -G devgroup
+USER devuser
+USER root
 # 复制 Nginx 配置
 #COPY nginx.conf /etc/nginx/nginx.conf
 
