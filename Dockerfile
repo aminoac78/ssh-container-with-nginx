@@ -3,7 +3,7 @@ FROM alpine:latest
 # 安装依赖：SSH、Nginx、Cloudflared、bash
 RUN apk add --no-cache openssh nginx bash curl && \
     # 设置 root 密码
-    #echo "root:123456" | chpasswd && \
+    echo "root:123456" | chpasswd && \
     sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config && \
     # 创建必要目录
     mkdir -p /var/run/sshd /run/nginx /etc/cloudflared && \
