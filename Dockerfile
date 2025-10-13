@@ -11,7 +11,8 @@ RUN apk add --no-cache openssh nginx bash curl && \
     ssh-keygen -A && \
     rm -rf /var/cache/apk/*
     #touch /etc/nginx/nginx.conf
-
+# 创建非 root 用户
+RUN addgroup -S devgroup && adduser -S devuser -G devgroup
 # 复制 Nginx 配置
 #COPY nginx.conf /etc/nginx/nginx.conf
 
