@@ -14,22 +14,36 @@ RUN addgroup -g 10014 devgroup && \
     sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config && \
     sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config
 
-# 3. 预配置 Nginx (使其不再访问只读的 /var/lib/nginx)
-RUN sed -i 's/listen 80;/listen 8080;/g' /etc/nginx/http.d/default.conf && \
-    sed -i 's|/run/nginx.pid|/tmp/nginx.pid|g' /etc/nginx/nginx.conf && \
-    sed -i 's/user nginx;//g' /etc/nginx/nginx.conf
-
-# 切换到非 root 用户
-# ... (前面的步骤保持不变)
+# 1. 在构建阶段直接生成一个特殊的 Nginx 配置文件，全部指向 /tmp
+RUN echo 'worker_processes auto; \
+pid /tmp/nginx.pid; \
+events { worker_connections 1024; } \
+http { \
+    include /etc/nginx/mime.types; \
+    client_body_temp_path /tmp/nginx/client_body; \
+    proxy_temp_path /tmp/nginx/proxy; \
+    fastcgi_temp_path /tmp/nginx/fastcgi; \
+    uwsgi_temp_path /tmp/nginx/uwsgi; \
+    scgi_temp_path /tmp/nginx/scgi; \
+    access_log /tmp/access.log; \
+    error_log /tmp/error.log; \
+    server { \
+        listen 8080; \
+        location / { \
+            root /var/lib/nginx/html; \
+            index index.html; \
+        } \
+    } \
+}' > /home/devuser/nginx_temp.conf
 
 USER 10014
 EXPOSE 2222 8080
 
 CMD ["sh", "-c", "\
-    # a. 创建必要子目录
+    # a. 准备 /tmp 目录
     mkdir -p /tmp/ssh_keys /tmp/nginx/client_body /tmp/nginx/proxy /tmp/nginx/fastcgi /tmp/nginx/uwsgi /tmp/nginx/scgi; \
     \
-    # b. 动态生成 SSH 密钥 (改用 echo | 方式解决 ash 语法错误)
+    # b. 生成 SSH 密钥
     if [ ! -f /tmp/ssh_keys/ssh_host_ed25519_key ]; then \
         echo 'y' | ssh-keygen -q -t ed25519 -N '' -f /tmp/ssh_keys/ssh_host_ed25519_key; \
         echo 'y' | ssh-keygen -q -t rsa -N '' -f /tmp/ssh_keys/ssh_host_rsa_key; \
@@ -43,12 +57,6 @@ CMD ["sh", "-c", "\
         -o 'PidFile /tmp/sshd.pid' \
         -o 'StrictModes no' & \
     \
-    # d. 启动 Nginx
-    nginx -g 'daemon off; \
-             error_log /tmp/nginx_error.log; \
-             client_body_temp_path /tmp/nginx/client_body; \
-             proxy_temp_path /tmp/nginx/proxy; \
-             fastcgi_temp_path /tmp/nginx/fastcgi; \
-             uwsgi_temp_path /tmp/nginx/uwsgi; \
-             scgi_temp_path /tmp/nginx/scgi;' \
+    # d. 启动 Nginx (显式指定我们的配置文件)
+    nginx -c /home/devuser/nginx_temp.conf -g 'daemon off;' \
 "]
