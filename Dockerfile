@@ -1,7 +1,7 @@
 FROM alpine:latest
 
 # 安装依赖：SSH、Nginx、Cloudflared、bash
-RUN apk add --no-cache openssh nginx bash curl wget sudo && \
+RUN apk add --no-cache openssh nginx bash curl && \
     # 设置 root 密码
     echo "root:123456" | chpasswd && \
     sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config && \
@@ -36,7 +36,23 @@ EXPOSE  22 80
 #CMD ["/start.sh"]
 RUN chown -R 10014:10014 /home/devuser
 # 切换到该用户（⚠️ 必须用 UID）
+# 1. 确保目录存在并属于非 root 用户
+RUN mkdir -p /home/devuser/ssh_keys
+RUN chown -R devuser:devgroup /home/devuser/ssh_keys
+
 USER 10014
 
-CMD sudo sh -c "mkdir -p /var/run/sshd /run/nginx /etc/cloudflared &&  ssh-keygen -A && nginx -g 'daemon off;'"
-
+# 2. 在 CMD 启动时实时生成（即便镜像里没打包进去，启动时也会立刻创建）
+CMD ["sh", "-c", "\
+    # 如果密钥不存在，则生成
+    if [ ! -f /home/devuser/ssh_keys/ssh_host_rsa_key ]; then \
+        ssh-keygen -q -t rsa -N '' -f /home/devuser/ssh_keys/ssh_host_rsa_key; \
+    fi; \
+    # 强制 sshd 使用我们指定的密钥文件和非 22 端口
+    /usr/sbin/sshd -D \
+        -p 2222 \
+        -h /home/devuser/ssh_keys/ssh_host_rsa_key \
+        -o 'PidFile /home/devuser/ssh_keys/sshd.pid' \
+        -o 'StrictModes no' & \
+    nginx -g 'daemon off;' \
+"]
