@@ -1,58 +1,43 @@
 FROM alpine:latest
 
-# 安装依赖：SSH、Nginx、Cloudflared、bash
+# 1. 安装依赖
 RUN apk add --no-cache openssh nginx bash curl && \
-    # 设置 root 密码
-    echo "root:123456" | chpasswd && \
-    sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config && \
-    # 创建必要目录
-    mkdir -p /var/run/sshd /run/nginx /etc/cloudflared && \
-    # 生成 SSH host keys
-    ssh-keygen -A && \
     rm -rf /var/cache/apk/*
-    #touch /etc/nginx/nginx.conf
-# 创建 UID=10014 的用户
+
+# 2. 创建用户并准备目录（在 root 阶段完成）
 RUN addgroup -g 10014 devgroup && \
-    adduser -D -u 10014 -G devgroup devuser
+    adduser -D -u 10014 -G devgroup devuser && \
+    mkdir -p /home/devuser/ssh_keys /home/devuser/run/nginx /home/devuser/logs && \
+    # 修正权限，确保 devuser 有权读写这些地方
+    chown -R 10014:10014 /home/devuser /var/lib/nginx /var/log/nginx
 
-# 给 devuser sudo 权限（可选）
-RUN echo "devuser ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+# 3. 预先配置 Nginx 监听非 80 端口（否则 devuser 启动会报错）
+RUN sed -i 's/listen 80;/listen 8080;/g' /etc/nginx/http.d/default.conf && \
+    # 允许 Nginx PID 文件写在用户目录
+    sed -i 's|pid /run/nginx.pid;|pid /home/devuser/run/nginx/nginx.pid;|g' /etc/nginx/nginx.conf || true
 
-
-# 复制 Nginx 配置
-#COPY nginx.conf /etc/nginx/nginx.conf
-
-# 复制 Cloudflared 配置
-#COPY config.yml /etc/cloudflared/config.yml
-
-# 启动脚本
-#COPY start.sh /start.sh
-#RUN chmod +x /start.sh
-
-# 暴露端口（容器内）
-EXPOSE  22 80
-
-
-#CMD ["/start.sh"]
-RUN chown -R 10014:10014 /home/devuser
-# 切换到该用户（⚠️ 必须用 UID）
-# 1. 确保目录存在并属于非 root 用户
-RUN mkdir -p /home/devuser/ssh_keys
-RUN chown -R devuser:devgroup /home/devuser/ssh_keys
-
+# 切换到非 root 用户
 USER 10014
 
-# 2. 在 CMD 启动时实时生成（即便镜像里没打包进去，启动时也会立刻创建）
+# 暴露高位端口
+EXPOSE 2222 8080
+
+# 4. 运行时的 CMD 逻辑
 CMD ["sh", "-c", "\
-    # 如果密钥不存在，则生成
-    if [ ! -f /home/devuser/ssh_keys/ssh_host_rsa_key ]; then \
+    # 动态生成 SSH 主机密钥（存放在用户有权写入的地方）
+    if [ ! -f /home/devuser/ssh_keys/ssh_host_ed25519_key ]; then \
+        ssh-keygen -q -t ed25519 -N '' -f /home/devuser/ssh_keys/ssh_host_ed25519_key; \
         ssh-keygen -q -t rsa -N '' -f /home/devuser/ssh_keys/ssh_host_rsa_key; \
     fi; \
-    # 强制 sshd 使用我们指定的密钥文件和非 22 端口
+    \
+    # 启动 SSHD：指定非 22 端口，指定非标准路径密钥，指定非标准 PID 文件
     /usr/sbin/sshd -D \
         -p 2222 \
         -h /home/devuser/ssh_keys/ssh_host_rsa_key \
+        -h /home/devuser/ssh_keys/ssh_host_ed25519_key \
         -o 'PidFile /home/devuser/ssh_keys/sshd.pid' \
         -o 'StrictModes no' & \
+    \
+    # 启动 Nginx
     nginx -g 'daemon off;' \
 "]
