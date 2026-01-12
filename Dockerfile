@@ -14,6 +14,9 @@ RUN addgroup -g 10014 devgroup && \
     sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config && \
     sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config
 
+RUN rm -rf /var/lib/nginx/logs && \
+    ln -s /tmp /var/lib/nginx/logs
+    
 # 1. 在构建阶段直接生成一个特殊的 Nginx 配置文件，全部指向 /tmp
 RUN echo 'worker_processes auto; \
 pid /tmp/nginx.pid; \
@@ -30,8 +33,7 @@ http { \
     server { \
         listen 8080; \
         location / { \
-            root /var/lib/nginx/html; \
-            index index.html; \
+            return 200 "Nginx is running on Choreo!"; \
         } \
     } \
 }' > /home/devuser/nginx_temp.conf
