@@ -38,5 +38,8 @@ RUN chown -R 10014:10014 /home/devuser
 # 切换到该用户（⚠️ 必须用 UID）
 USER 10014
 
-CMD sh -c "/usr/sbin/sshd && nginx -g 'daemon off;'"
+CMD sh -c "mkdir -p /var/run/sshd /run/nginx /etc/cloudflared && \
+    # 生成 SSH host keys
+    ssh-keygen -A && \
+    /usr/sbin/sshd && nginx -g 'daemon off;'"
 
