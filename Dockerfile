@@ -27,4 +27,4 @@ ENTRYPOINT ["/usr/bin/entrypoint-wrapper.sh"]
 
 # 切换回官方镜像默认的非 root 用户 (通常是 git, UID 1000)
 # 这一步至关重要，能确保 Gitea 以最小权限运行，提升安全性
-USER 1000
+USER 10001
