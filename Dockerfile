@@ -1,6 +1,6 @@
-# 使用官方 Gitea 镜像作为基础
-FROM docker.gitea.com/gitea:latest
+FROM docker.gitea.com/gitea:latest-rootless
 
-# 切换回官方镜像默认的非 root 用户 (通常是 git, UID 1000)
-# 这一步至关重要，能确保 Gitea 以最小权限运行，提升安全性
-USER 10001
+# rootless 镜像默认以 UID 1000 运行，平台要求 10001-20000
+# 通过环境变量指定，无需修改 /etc/passwd
+ENV USER_UID=10001
+ENV USER_GID=10001
