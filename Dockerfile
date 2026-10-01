@@ -4,3 +4,5 @@ FROM docker.gitea.com/gitea:latest-rootless
 # 通过环境变量指定，无需修改 /etc/passwd
 ENV USER_UID=10001
 ENV USER_GID=10001
+
+USER 10001
